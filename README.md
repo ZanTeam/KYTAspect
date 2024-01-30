@@ -71,18 +71,18 @@ KYT/AML 可以帮助区块链的参与者识别地址和交易存在风险，找
 ```shell
 npm install
 ```
-1. 编译测试用Solidity智能合约以及KYT Demo Aspect
+3. 编译测试用Solidity智能合约以及KYT Demo Aspect
 ```shell
 npm run contract:build
 npm run aspect:build
 ```
-1. 运行`tests`文件夹下的`aspect-deploy.js`，该脚本将会自动部署Kyt token合约、Kyt demo aspect，此外还将部署一个WART token、USDT token、mock dex合约，并转移WART、USDT到mock dex合约中。最后，将发起一笔交易调用Kyt token的transferAndCall方法，参数为mock dex合约，合约将transfer WART token、USDT token给发送者，模拟套利场景。
+4. 运行`tests`文件夹下的`aspect-deploy.js`，该脚本将会自动部署Kyt token合约、Kyt demo aspect，此外还将部署一个WART token、USDT token、mock dex合约，并转移WART、USDT到mock dex合约中。最后，将发起一笔交易调用Kyt token的transferAndCall方法，参数为mock dex合约，合约将transfer WART token、USDT token给发送者，模拟套利场景。
 ```shell
 cd tests
 node aspect-deploy.js
 ```
 
-1. 运行ZAN KYT后台进程
+5. 运行ZAN KYT后台进程
 ```shell
 # 修改scripts/kyt-worker.js 添加aspectId和ZAN API KEY
 vim scripts/kyt-worker.js
@@ -169,18 +169,18 @@ Prerequisite: Solidity version >= 0.8.19
 ```shell
 npm install
 ```
-1. Compile the test Solidity smart contract and the KYT Demo Aspect.
+3. Compile the test Solidity smart contract and the KYT Demo Aspect.
 ```shell
 npm run contract:build
 npm run aspect:build
 ```
-1. Run the `aspect-deploy.js` script located in the `tests` folder. This script will automatically deploy the Kyt token contract and the Kyt demo aspect. Additionally, it will deploy a WART token, a USDT token, and a mock DEX contract, and then transfer WART and USDT tokens into the mock DEX contract. Finally, it will initiate a transaction to call the `transferAndCall` method of the Kyt token, with the mock DEX contract as the parameter. The contract will transfer WART tokens and USDT tokens back to the sender, simulating an arbitrage scenario.
+4. Run the `aspect-deploy.js` script located in the `tests` folder. This script will automatically deploy the Kyt token contract and the Kyt demo aspect. Additionally, it will deploy a WART token, a USDT token, and a mock DEX contract, and then transfer WART and USDT tokens into the mock DEX contract. Finally, it will initiate a transaction to call the `transferAndCall` method of the Kyt token, with the mock DEX contract as the parameter. The contract will transfer WART tokens and USDT tokens back to the sender, simulating an arbitrage scenario.
 ```shell
 cd tests
 node aspect-deploy.js
 ```
 
-1. Run KYT API worker
+5. Run KYT API worker
 ```shell
 # modify scripts/kyt-worker.js to add the aspectId and a ZAN API KEY
 vim scripts/kyt-worker.js
