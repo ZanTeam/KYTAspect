@@ -56,12 +56,12 @@ KYT/AML 可以帮助区块链的参与者识别地址和交易存在风险，找
 完全链上通用KYT Aspect能够解决当下Off-chain KYT的很多重要问题，例如链上攻击拦截、链上KYT信息共享等。但将全部KYT/AML的能力从线下一步转移到线上也会有出现很多问题，例如 aspect 计算及存储开销、历史交易数据的获取、外部数据源连接等。因此，从中短期规划来看，可以将部分KYT/AML规则和架构放在链上 Aspect 中，复杂算法——例如地址/交易风险评分、Ice Phishing检测等依然使用链下KYT系统进行定期计算，作为 Off-Chain 到 On-Chain KYT的一个过渡性方案，让当前链上Dapp能够快速接入以降低风险和满足AML/CFT合规需求。链下KYT可以使用当前比较成熟的KYT产品API方式进行接入（ https://docs.zan.top/reference/kyt-api-instructions ）。算法产出的KYT数据可以由 data feed provider 定期更新上链，或是使用类似Chainlink语言机的方式提供。从长远来看，Aspect KYT的发展，需要根据Artela Aspect的发展来进行规划，根据Aspect的能力来设计和迭代KYT/AML系统架构。
 
 <div align="center">
-	<img src="./resources/On_chain_Off_chain_KYT.jpg"  style="zoom: 55%;" />
+	<img src="./resources/Off_Chain_KYT_aspect.png"  style="zoom: 55%;" />
 </div>
 
 ## 1.4 KYT使用场景详述
 ### 1.4.1 KYT目标用户分析
-KYT作为一个Public Goods，它的目标用户将会是整个生态中的所有Defi项目及参与者，例如DEX、CEX、Lending、Bridge、Stake、RWA等。尤其是金融属性较强、合规需求高的项目和实体地址，非常适合接入KYT系统。根据风险控制程度、合规要求程度等方面，可以分为一下几类：
+KYT作为一个Public Goods，它的目标用户将会是整个生态中的所有Defi项目及参与者，例如DEX、CEX、Lending、Bridge、Stake、RWA等。尤其是金融属性较强、合规需求高的项目和实体地址，非常适合接入KYT系统。根据风险控制程度、合规要求程度等方面，可以分为以下几类：
 
 1. **监管合规要求高，风险控制程度高**：这类用户基本上是一个链生态的基础设置，或者是处于链生态资金流边缘的项目，拥有大量的用户及交易量。这类项目通常也被犯罪分子用于洗钱，而且也常常成为黑客攻击的目标。例如L1头部跨链桥（stargate）、L2原生跨链桥项目（polygon plasma/pos）以及各类跨链Swap协议，过去的几年里Harmony、Wormhole、Multichain、Socket等多个头部跨链桥遭受黑客攻击，损失惨重。此外，利用跨链桥洗钱的攻击者也数不胜数。中心化交易所（CEX）、Wrapped Native（WETH、WBNB、WMATIC等）、Staking Pool、RWA也是不法分子用来洗钱的途径，这些项目通常需要非常高的合规需求，严厉禁止具有高风险、受制裁、可疑身份的地址与之进行交互。此类用户使用KYT后能够有效地减少高风险地址的交互量，在很大程度上降低安全风险，提高合规性。例如当用户调用跨链桥合约进行跨链时，合约可以调用KYT检查用户地址的风险等级，确认该地址没有风险行为后，才允许其进行资金跨链操作。否则将认定该用户的资金来源非法，还可进一步将资金进行扣押。
 
@@ -100,7 +100,23 @@ KYT Aspect按照其链上功能规模可分为至少4个阶段：
 3. 阶段2：该阶段是一个里程碑，代表链上KYT能获取到的数据与链下几乎相同（区块级别Join-point、历史状态数据等）。此时，可以将主要的KYT能力从链下迁移到链上，例如钓鱼攻击检测、三明治攻击检测、风险评分体系等。一些大规模计算的任务依旧放在链下，例如完整AML资金流追踪、图计算等。此时，由于较为完备的KYT能力使得风险检测准确性更高，**攻击拦截**这个里程碑式的KYT能力将添加进链上KYT Aspect中。此阶段在KYT风险检测能力上已经能达到与链下KYT产品近乎一样的能力，且具备链下KYT无法完成的攻击拦截能力。
 4. 阶段3：在上一阶段的基础上加入例如ERC677等标准的Token合约，打造链上KYT系统的**经济模型**和**去中心治理模型**。从不同类型的Defi角度去适配KYT模块，甚至可以根据不同的项目去打造相应的Router合约，让用户更方便地使用KYT Aspect。该阶段也是一个里程碑，标志着链上KYT Aspect正式商用，并且能够证明其在同类产品中具有较高的竞争力。
 
-## 1.6 KYT Aspect 示例运行
+## 1.6 KYT Aspect代码详解
+### 1.6.1 KYT Aspect主模块
+KYT Aspect主要逻辑位于`aspect`目录下的`kytAspect.ts`中。首先，aspect定义了两个Join-point，分别是`preContractCall`和`postTxExecute`。preContractCall主要用于更新token价格等前置操作，这里我们获取了预置的token列表，再通过JIT方式调用合约中的priceOracleAnswer，该方法能够通过TWAP或Chainlink获取token的最新价格。获取到的token价格数据存放到WASM世界状态中。
+
+接下来是postTxExecute中，对资金流进行了简单地处理：
+1. 通过`sys.hostApi.runtimeContext.get('receipt.logs')`获取到交易的logs，遍历logs解析ERC20、ERC721的转账情况（之后需要支持上ERC1155）。
+2. 通过`sys.hostApi.trace.queryCallTree`获取到交易的内部交易树，通过对内部交易树的遍历，解析出原生art的转账情况。
+3. 遍历内部交易树，检测是否存在闪电贷调用。本次支持的闪电贷接口有uniswap v3、balancer、aave v2、aave v3，为闪电贷数量占比较大的闪电贷提供方。后续可以支持dydx、Maker等头部项目的闪电贷协议检测。
+4. 通过`buildAddressProfitMap`方法，计算每个关联的地址在这比交易中token的转移情况：
+```Typescript
+addressBalanceChangeMap: Map<string, Map<string, f64>>
+```
+EOA/Contract地址 -> (Token 地址 -> 数量)
+5. 通过`buildAddressBalanceChangeMap`方法，使用preContractCall中更新好的token价格数据将每个地址的资产变化统一成USD单位。这里需要注意token的decimals，当前默认了都为18，因为是mock的数据，之后需要更加注意每个token的decimals是不同的的。
+6. 最后，`checkFlashloanArbitrage`将把上述处理好的数据进行判断，这里其实可以进行风控规则的自定义化，允许用户定义阈值权重。这里由于开发时间有限，暂时设置了一个阈值。
+
+## 1.7 KYT Aspect 示例运行
 `aspect`文件夹实现了KYT的部分PoC功能，其中kytAspect为主要逻辑类，实现了简单的闪电贷套利检测Demo以及链上链下KYT数据通道PoC；
 `contracts`文件夹实现了链上KYT构想的合约部分功能，主要包含的是业务逻辑，KytToken为主合约。其中，`test`文件夹下包含了一些验证测试用的Mock合约；
 `script`文件夹下的`kyt-worker.js`实现了链上链下混合KYT系统的链下部分；
@@ -194,7 +210,7 @@ These features are currently not achievable in typical EVM smart contracts, maki
 A fully on-chain, generic KYT Aspect can solve many significant issues currently faced by off-chain KYT, such as on-chain attack interception and on-chain KYT information sharing. However, transitioning all KYT/AML capabilities from offline to online in one step would also present many challenges, such as computational and storage expenses for the aspect, acquisition of historical transaction data, and connecting to external data sources. Therefore, from a short to medium-term planning perspective, it's feasible to implement some of the KYT/AML rules and architecture on the on-chain Aspect. Complex algorithms—for instance, address/transaction risk scoring, Ice Phishing detection—would still be processed off-chain in the KYT system on a regular basis. This can serve as a transitional solution from Off-Chain to On-Chain KYT, allowing current on-chain Dapps to quickly integrate and reduce risks while meeting AML/CFT compliance requirements. Off-chain KYT can utilize the APIs of currently mature KYT products for integration.（ https://docs.zan.top/reference/kyt-api-instructions ）。The KYT data produced by the algorithm can be regularly updated on-chain by a data feed provider, or provided using a mechanism similar to Chainlink oracles. In the long term, the development of Aspect KYT needs to be planned according to the progress of Artela Aspect, with the KYT/AML system architecture designed and iterated based on Aspect's capabilities.
 
 <div align="center">
-	<img src="./resources/On_chain_Off_chain_KYT.jpg"  style="zoom: 55%;" />
+	<img src="./resources/Off_Chain_KYT_aspect.png"  style="zoom: 55%;" />
 </div>
 
 ## 2.4 Run KYT Aspect Demo
