@@ -1,6 +1,8 @@
 # Generic On-chain KYT Aspect
 For Artela Aspect Use Cases Buildathon ( https://dorahacks.io/hackathon/artela-usecase/detail#-resources ) 
 
+[中文](README-CN.md)
+
 Hackathon Team Members:
 - Yunhan Hu：Architect, Developer, Tester
 - Yang Chen：Architect, Developer, Tester
